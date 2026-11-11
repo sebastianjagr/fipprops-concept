@@ -123,6 +123,12 @@ a{color:var(--acc)}
   .bar{padding-top:12px}
 }
 
+/* a viewer that shows the whole page at once (no scrolling inside it) gets the same still version as reduced motion */
+html.static .st{height:auto}
+html.static .st .sticky{position:relative;inset:auto;visibility:visible;height:auto;padding-block:48px}
+html.static .intro{height:auto;padding:90px var(--gutter) 40px}
+html.static .intro .in{position:static;transform:none;opacity:1;filter:none;visibility:visible}
+html.static .copy h2 .w,html.static .copy p,html.static .copy .no,html.static .copy .cta{opacity:1;filter:none;letter-spacing:inherit}
 /* reduced motion: every stage shows its lit frame and its text, no scroll choreography */
 @media (prefers-reduced-motion: reduce){
   .st{height:auto}
@@ -389,7 +395,7 @@ a{color:var(--acc)}
       if (!st.ready[k]) o = 0;
       var L = st.layers[k];
       L.style.opacity = o.toFixed(3);
-      L.style.visibility = o > 0 ? 'visible' : 'hidden';
+      L.style.visibility = o > 0 ? 'inherit' : 'hidden';
     }
     // every stage fades back to black at its end (except the closing one), so photos appear and disappear
     var out = st.el.classList.contains('close') ? 1 : 1 - smooth(.88, .99, p);
@@ -446,24 +452,33 @@ a{color:var(--acc)}
     queued = false;
     var vh = innerHeight;
     if (intro) { var io = 1 - smooth(0, vh * .45, scrollY); intro.style.setProperty('--io', io.toFixed(3)); intro.style.setProperty('--iv', io > 0.001 ? 'visible' : 'hidden'); }
+    // exactly one stage is on at any scroll position: the first whose track has started and not finished
+    var qs = stages.map(function (st) { return progress(st, vh); });
+    var cur = -1;
+    qs.forEach(function (q, i) { if (cur < 0 && q.on) cur = i; });
     stages.forEach(function (st, idx) {
-      var q = progress(st, vh);
+      var q = qs[idx], on = idx === cur;
       if (q.near) load(st);
-      if (q.on && stages[idx + 1]) load(stages[idx + 1]);
-      st.el.classList.toggle('active', q.on);
-      if (!q.on && !st.dirty) return;
+      if (on && stages[idx + 1]) load(stages[idx + 1]);
+      st.el.classList.toggle('active', on);
+      if (!on && !st.dirty) return;
       st.dirty = false;
-      if (st.kind === 'seq') setSeq(st, q.p); else setLamp(st, q.p);
+      try { if (st.kind === 'seq') setSeq(st, q.p); else setLamp(st, q.p); }
+      catch (e) { if (window.console) console.error('stage ' + idx, e); }
     });
   }
-  function queue() { if (!queued) { queued = true; requestAnimationFrame(reduce ? still : frame); } }
+  // update straight from the scroll event (and once more on the next frame), so nothing waits on a frame that may never come
+  function queue() {
+    (reduce ? still : frame)();
+    if (!queued) { queued = true; requestAnimationFrame(function () { queued = false; (reduce ? still : frame)(); }); }
+  }
 
   // reduced motion: everything loads lazily and rests on its lit key frame
   function still() {
     queued = false;
     stages.forEach(function (st) {
       if (st.kind === 'seq') {
-        st.layers.forEach(function (L, k) { var o = k === st.key ? 1 : 0; L.style.opacity = o; L.style.visibility = o ? 'visible' : 'hidden'; });
+        st.layers.forEach(function (L, k) { var o = k === st.key ? 1 : 0; L.style.opacity = o; L.style.visibility = o ? 'inherit' : 'hidden'; });
         setT(st, 1);
         if (st.narrow) st.narrow.el.style.opacity = 0;
       } else {
@@ -474,6 +489,10 @@ a{color:var(--acc)}
     });
   }
 
+  if (!reduce && document.documentElement.scrollHeight <= innerHeight + 2) {
+    reduce = true;
+    document.documentElement.classList.add('static');
+  }
   if (reduce) {
     stages.forEach(function (st) {
       st.imgs.forEach(function (o) { o.img.loading = 'lazy'; });
@@ -484,6 +503,27 @@ a{color:var(--acc)}
     return;
   }
   addEventListener('scroll', queue, { passive: true });
+
+  // smooth wheel scrolling: a mouse wheel moves in coarse steps, so ease the page towards where the wheel points,
+  // which makes the light glide on a mouse the way it does on a touchpad
+  var sTarget = scrollY, sCur = scrollY, sAnim = false;
+  function maxScroll() { return document.documentElement.scrollHeight - innerHeight; }
+  function sStep() {
+    sCur += (sTarget - sCur) * .085;
+    if (Math.abs(sTarget - sCur) < .5) { sCur = sTarget; sAnim = false; }
+    scrollTo(0, sCur);
+    if (sAnim) requestAnimationFrame(sStep);
+  }
+  addEventListener('wheel', function (e) {
+    if (e.ctrlKey || e.defaultPrevented) return;
+    e.preventDefault();
+    if (!sAnim) sCur = sTarget = scrollY;
+    var d = e.deltaY * (e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? innerHeight : 1);
+    sTarget = clamp(sTarget + d, 0, maxScroll());
+    if (!sAnim) { sAnim = true; requestAnimationFrame(sStep); }
+  }, { passive: false });
+  addEventListener('keydown', function () { sAnim = false; });
+  addEventListener('pointerdown', function () { sAnim = false; });
   addEventListener('resize', function () { stages.forEach(function (s) { s.dirty = true; }); queue(); });
   load(stages[0]);
   frame();
