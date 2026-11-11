@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fip Props Concept</title>
+<meta name="description" content="A concept for the new Fip Props home page: one warm light, driven by scrolling, finds the props in the dark.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&display=swap">
+<style>
+/* The page is a dark stage in both themes, on purpose: the light is the only thing that should glow. */
+:root{
+  --stage:#050403; --stage-2:#0d0a06; --ink:#F5EAD0; --sub:#bfae86; --muted:#8a7a5c; --acc:#E8A33D; --acc-ink:#1a1206; --line:#2a2015;
+  --display:'Cinzel','Trajan Pro',Georgia,serif; --serif:'EB Garamond',Garamond,Georgia,serif; --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --gutter:max(16px,env(safe-area-inset-left,0px));
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--stage:#050403;--ink:#F5EAD0;color-scheme:dark}}
+:root[data-theme="dark"]{--stage:#050403;--ink:#F5EAD0;color-scheme:dark}
+:root[data-theme="light"]{color-scheme:dark}
+
+*{box-sizing:border-box}
+html{background:var(--stage)}
+body{margin:0;background:var(--stage);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+h1,h2,p{margin:0}
+h1,h2{text-wrap:balance}
+a{color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+
+/* top bar: plain gradient, no blur over images */
+.bar{position:fixed;inset:0 0 auto 0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px var(--gutter) 22px;background:linear-gradient(to bottom,rgba(5,4,3,.85),rgba(5,4,3,0));pointer-events:none}
+.bar .mark{font-family:var(--display);font-weight:600;letter-spacing:3px;font-size:14px;color:var(--ink)}
+.bar a{pointer-events:auto;font-size:12.5px;letter-spacing:.4px;color:var(--sub);text-decoration:none;border-bottom:1px solid rgba(191,174,134,.35)}
+
+/* intro */
+.intro{min-height:72svh;display:grid;place-items:center;text-align:center;padding:90px var(--gutter) 40px}
+.intro .in{display:grid;gap:16px;justify-items:center;max-width:46ch}
+.intro .k{font-size:11.5px;letter-spacing:2.4px;text-transform:uppercase;color:var(--acc)}
+.intro p{font-family:var(--serif);font-size:clamp(18px,2.2vw,21px);color:var(--sub)}
+.intro .ray{width:min(420px,70vw);height:1px;background:linear-gradient(90deg,transparent,rgba(232,163,61,.7) 40%,rgba(255,230,180,.95) 50%,rgba(232,163,61,.7) 60%,transparent)}
+.intro .hint{font-size:11.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}
+
+/* a stage: tall scroll track with a sticky screen inside */
+.st{position:relative;height:calc(var(--len,300) * 1vh)}
+.sticky{position:sticky;top:0;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+/* nothing scrolls: every stage is a fixed screen, shown only while its scroll track is current;
+   each one starts and ends in black, so the hand-over between stages is invisible */
+@media (prefers-reduced-motion: no-preference){
+  .st .sticky{position:fixed;inset:0;visibility:hidden}
+  .st.active .sticky{visibility:visible}
+  .intro{height:100vh;height:100svh;min-height:0;padding:0}
+  .intro .in{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(46ch,calc(100vw - 2 * var(--gutter)));z-index:5;
+    opacity:var(--io,1);filter:blur(calc((1 - var(--io,1)) * 8px));visibility:var(--iv,visible)}
+}
+.band{position:relative;width:100%;height:min(calc(100vw / 2.4),68vh);background:#000;overflow:hidden;flex:none}
+.st.tall .band{height:min(calc(100vw / 1.7778),86vh)}
+.push{position:absolute;inset:0;transform-origin:50% 55%}
+.st.active .push{will-change:transform}
+.layer{position:absolute;inset:0;opacity:0;visibility:hidden}
+.layer.black{background:#000}
+.layer img,.lamp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none}
+.layer picture,.lamp picture{position:absolute;inset:0}
+
+/* single-key heroes: a dark copy underneath, the lit copy on top seen through a moving soft pool */
+.lamp{position:absolute;inset:0}
+.lamp .ghost img{filter:brightness(.075) contrast(1.25)}
+.lamp .lit{-webkit-mask-image:var(--mask,linear-gradient(transparent,transparent));mask-image:var(--mask,linear-gradient(transparent,transparent))}
+.lamp .lit img{filter:contrast(1.05) sepia(.08) saturate(1.04)}
+.st.active .lamp .lit{will-change:mask-image}
+.lamp-st[data-img="pewter"] .lit img{filter:contrast(1.06) saturate(.32) brightness(1.02)}
+.lamp-st[data-img="pewter"] .ghost img{filter:brightness(.075) contrast(1.25) saturate(.3)}
+.lamp .warm{position:absolute;inset:0;mix-blend-mode:overlay;background:var(--warm,none);pointer-events:none}
+.vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 72% 78% at 50% 52%,transparent 52%,rgba(0,0,0,.55) 82%,rgba(0,0,0,.85) 100%)}
+.vig.strong{background:radial-gradient(ellipse 58% 74% at 50% 52%,transparent 45%,rgba(0,0,0,.7) 78%,#000 100%)}
+.narrow{position:absolute;inset:0;pointer-events:none;opacity:0;background:var(--narrow,none)}
+.edge{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,#050403 0,transparent 9%,transparent 91%,#050403 100%)}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.06;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.cap{position:absolute;right:var(--gutter);bottom:18px;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--sub);opacity:0}
+
+/* text */
+.copy{display:grid;gap:10px;justify-items:start;width:100%;max-width:1180px;margin:0 auto;padding:clamp(18px,3.4vh,34px) var(--gutter) 0;
+  --tt:var(--t,0)}
+/* text comes in like a focus pull: each word of the headline sharpens out of a soft blur in turn, in place;
+   the line under it follows; going out it runs in reverse (driven from the script, see setT) */
+.copy h2 .w{display:inline-block;white-space:pre;opacity:0}
+.copy p,.copy .no,.copy .cta{opacity:0}
+.copy h2{font-family:var(--display);font-weight:600;font-size:clamp(27px,3.6vw,48px);line-height:1.08;letter-spacing:.6px}
+.copy p{font-family:var(--serif);font-size:clamp(17px,1.6vw,21px);line-height:1.45;color:var(--sub);max-width:44ch}
+.copy .no{font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+.copy .no b{font-weight:500;color:var(--sub)}
+.copy p.big{font-size:clamp(20px,2.1vw,27px);font-style:italic;color:var(--ink)}
+/* tablets and small windows: hero band leaves room for the text below it */
+@media (min-width:761px) and (max-width:1023px){
+  .st.tall .band{height:min(calc(100vw / 1.7778),62vh)}
+}
+/* desktop: on hero stages the text sits in the black beside the prop */
+@media (min-width:1024px){
+  .st.tall .copy{position:absolute;top:50%;max-width:min(26vw,380px);padding:0;margin:0;transform:translateY(-50%)}
+  .st.tall .copy h2{font-size:clamp(26px,2.5vw,40px)}
+  .st.tall.left .copy{left:max(6vw,var(--gutter))}
+  .st.tall.right .copy{right:max(6vw,var(--gutter));left:auto}
+}
+/* closing: text over the dimmed frame */
+.st.close .copy{position:absolute;inset:0;max-width:none;padding:0 var(--gutter);display:grid;place-content:center;justify-items:center;text-align:center;transform:none}
+.st.close .copy p{max-width:36ch}
+.cta{margin-top:14px;display:inline-block;font-family:var(--sans);font-weight:500;font-size:14px;letter-spacing:.3px;text-decoration:none;color:var(--acc-ink);background:var(--acc);border-radius:999px;padding:12px 24px}
+.cta:hover{background:#f0b55a}
+.dim{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 46% 52% at 50% 50%,rgba(5,4,3,.82) 0%,rgba(5,4,3,.62) 55%,rgba(5,4,3,.45) 100%)}
+
+.foot{padding:40px var(--gutter) 56px;text-align:center;font-size:12px;color:var(--muted);letter-spacing:.4px}
+
+/* phones: a 4:5 frame from the middle, text below it */
+@media (max-width:760px){
+  .band,.st.tall .band{height:min(125vw,60svh)}
+  .st.close .band{height:min(125vw,72svh)}
+  .copy h2{font-size:clamp(25px,7.4vw,32px)}
+  .copy p{font-size:17px}
+  .copy p.big{font-size:20px}
+  .cap{bottom:12px}
+  .bar{padding-top:12px}
+}
+
+/* reduced motion: every stage shows its lit frame and its text, no scroll choreography */
+@media (prefers-reduced-motion: reduce){
+  .st{height:auto}
+  .sticky{position:relative;height:auto;padding-block:48px}
+  .copy{opacity:1;transform:none}
+  .copy h2 .w,.copy p,.copy .no,.copy .cta{opacity:1;filter:none;letter-spacing:inherit}
+  @media (min-width:1024px){.st.tall .copy{transform:translateY(-50%)}}
+}
+</style>
+</head>
+<body>
+<header class="bar"><span class="mark">FIP PROPS</span><a href="https://www.fipprops.cz">Catalogue</a></header>
+
+<main>
+<section class="intro">
+  <div class="in">
+    <span class="k">Concept</span>
+    <p>A concept for the new Fip Props home page.</p>
+    <span class="ray" aria-hidden="true"></span>
+    <span class="hint">Scroll slowly</span>
+  </div>
+</section>
+
+<!-- 1. Opening: the tent aisle, from darkness to a lit aisle -->
+<section class="st seq" style="--len:290" data-frames="black,tent-1,tent-2,tent-3" data-key="3" data-textat="1.8" data-alt="A long warehouse aisle at night, shelves of props on both sides">
+  <div class="sticky">
+    <div class="band"><div class="push"></div><div class="edge"></div><div class="grain"></div></div>
+    <div class="copy">
+      <h2>Props from the pros.</h2>
+      <p>Tens of thousands of pieces for film and television, in one warehouse near Prague.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2. Scale: the pottery corridor, dark, then backlit; through black to the corridor lit from the camera -->
+<section class="st seq" style="--len:330" data-frames="black,pottery-1,pottery-2" data-key="2" data-textat="1.3" data-alt="A corridor of shelves full of earthenware jugs">
+  <div class="sticky">
+    <div class="band"><div class="push"></div><div class="edge"></div><div class="grain"></div></div>
+    <div class="copy">
+      <h2>Orders of magnitude.</h2>
+      <p>However large the production, we can dress it. Everything from one place.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Many: a beam along the shelves of bottles, then the earthenware laid out, narrowing to one -->
+<section class="st lamp-st" style="--len:320" data-img="laid-2" data-vig=""
+  data-path="0:.50,.80,.06,0|.10:.50,.80,.08,.9|.30:.50,.70,.22,1|.50:.50,.58,.42,1|.66:.50,.50,.75,1|.80:.50,.48,1.15,1|.88:.50,.48,1.15,1|.99:.50,.48,1.15,0"
+  data-alt="Dozens of earthenware jugs laid out on black cloth, lit from the front row to the back">
+  <div class="sticky">
+    <div class="band"><div class="push"></div><div class="grain"></div></div>
+    <div class="copy">
+      <h2>Many of kind.</h2>
+      <p>Not one of a kind, but many of each kind: enough to dress a whole market, tavern or kitchen.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4a. Brass ewer: the light rakes left to right, opens, then leaves a rim on the right -->
+<section class="st lamp-st tall left" style="--len:280" data-img="brass" data-vig=""
+  data-path="0:.27,.40,.07,0|.14:.27,.40,.08,.0|.24:.31,.42,.12,.95|.50:.62,.47,.15,1|.68:.49,.50,.46,1|.80:.49,.50,.46,1|.90:.70,.46,.20,.95|.99:.74,.46,.16,0"
+  data-alt="Engraved brass ewer, catalogue number 001607">
+  <div class="sticky">
+    <div class="band"><div class="push"></div><div class="grain"></div></div>
+    <div class="copy">
+      <span class="no">No. <b>001607</b> · Brass ewer</span>
+      <h2>Stunning craftsmanship. Period.</h2>
+      <p>Old pieces, made by hand, of a kind nobody makes any more.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4b. Pewter flagon: from the top right, down across the body, opens, rim on the left -->
+<section class="st lamp-st tall right" style="--len:280" data-img="pewter" data-vig="strong"
+  data-path="0:.70,.22,.07,0|.14:.70,.22,.08,0|.24:.65,.27,.12,.95|.50:.42,.70,.15,1|.68:.52,.50,.52,1|.80:.52,.50,.52,1|.90:.37,.50,.20,.95|.99:.33,.50,.16,0"
+  data-alt="Pewter flagon with a figure on the lid, catalogue number 002014">
+  <div class="sticky">
+    <div class="band"><div class="push"></div><div class="grain"></div></div>
+    <div class="copy">
+      <span class="no">No. <b>002014</b> · Pewter flagon</span>
+      <h2>Detailed. Oriented.</h2>
+      <p>Pieces you will not find elsewhere, right down to the last detail.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4c. Porcelain ginger jar: a real series (dark, spot, raking, lit, rim), then through black to the close-up -->
+<section class="st seq tall left" style="--len:340" data-frames="black,porc-1,porc-3,porc-4,porc-5" data-key="3" data-textat="2.6" data-alt="Blue and white porcelain ginger jar, catalogue number 002794">
+  <div class="sticky">
+    <div class="band"><div class="push"></div><div class="vig"></div><div class="grain"></div></div>
+    <div class="copy">
+      <span class="no">No. <b>002794</b> · Porcelain ginger jar</span>
+      <h2>You name it, we have it.</h2>
+      <p>Whatever the script asks for.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4d. Leather water flask: from the bottom left up to the top right, opens, rim at the top left -->
+<section class="st lamp-st tall right" style="--len:280" data-img="flask" data-vig="strong"
+  data-path="0:.34,.84,.07,0|.14:.34,.84,.08,0|.24:.37,.79,.12,.95|.50:.60,.30,.15,1|.68:.48,.52,.50,1|.80:.48,.52,.50,1|.90:.31,.30,.20,.95|.99:.28,.27,.16,0"
+  data-alt="Tooled leather water flask, catalogue number 005425">
+  <div class="sticky">
+    <div class="band"><div class="push"></div><div class="grain"></div></div>
+    <div class="copy">
+      <span class="no">No. <b>005425</b> · Leather water flask</span>
+      <p class="big">From fine porcelain to a soldier's water flask.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Closing -->
+<section class="st seq close" style="--len:220" data-frames="black,tent-4" data-key="1" data-textat="0.9" data-alt="The warehouse aisle at night, lanterns glowing">
+  <div class="sticky">
+    <div class="band"><div class="push"></div><div class="dim"></div><div class="edge"></div><div class="grain"></div>
+      <div class="copy">
+        <h2>No drama. Period.</h2>
+        <p>Ordering, delivery and communication, without complications.</p>
+        <a class="cta" href="https://www.fipprops.cz">Browse the catalogue</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var AR = function (name) { return name.indexOf('tent') === 0 ? 3168 / 1344 : 2752 / 1536; };
+  var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
+  var smooth = function (a, b, v) { var t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  var ease = function (t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+
+  function pic(name, cls, alt) {
+    var p = document.createElement('picture');
+    if (cls) p.className = cls;
+    var s = document.createElement('source');
+    s.media = '(max-width: 760px)';
+    // phones see a 4:5 crop of a wide frame, so the image is about 2.25x the screen width: let dense screens take 2400
+    s.sizes = '225vw';
+    s.dataset.srcset = 'img/' + name + '-1200.webp 1200w, img/' + name + '-2400.webp 2400w';
+    var i = document.createElement('img');
+    i.alt = alt || '';
+    i.decoding = 'async';
+    i.sizes = '100vw';
+    i.dataset.srcset = 'img/' + name + '-1200.webp 1200w, img/' + name + '-2400.webp 2400w';
+    i.dataset.src = 'img/' + name + '-1200.webp';
+    p.appendChild(s); p.appendChild(i);
+    return p;
+  }
+
+  // where a point of the image lands inside the band (object-fit: cover, centred)
+  function cover(W, H, ar) {
+    var s = Math.max(W / ar, H), dw = ar * s, dh = s;
+    return { ox: (W - dw) / 2, oy: (H - dh) / 2, dw: dw, dh: dh };
+  }
+
+  [].slice.call(document.querySelectorAll('.copy h2')).forEach(function (h) {
+    var words = h.textContent.trim().split(/\s+/);
+    h.setAttribute('aria-label', h.textContent.trim());
+    h.style.setProperty('--n', words.length);
+    h.innerHTML = words.map(function (w, i) { return '<span class="w" aria-hidden="true" style="--i:' + i + '">' + w + (i < words.length - 1 ? ' ' : '') + '</span>'; }).join('');
+  });
+  var intro = document.querySelector('.intro');
+  function setT(st, v) {
+    v = +v;
+    if (st.lastT === v) return;
+    st.lastT = v;
+    st.el.style.setProperty('--t', v.toFixed(3));
+    if (!st.words) {
+      st.words = [].slice.call(st.el.querySelectorAll('.copy h2 .w'));
+      st.subs = [].slice.call(st.el.querySelectorAll('.copy p, .copy .no, .copy .cta'));
+    }
+    var n = st.words.length;
+    st.words.forEach(function (w, i) {
+      var k = clamp((v * (n + 2.2) - i) / 2.2, 0, 1), e = k * k * (3 - 2 * k);
+      w.style.opacity = e.toFixed(3);
+      w.style.filter = e > .995 ? 'none' : 'blur(' + ((1 - e) * 14).toFixed(1) + 'px)';
+      w.style.letterSpacing = ((1 - e) * .18).toFixed(3) + 'em';
+    });
+    st.subs.forEach(function (el) {
+      var k = el.classList.contains('no') ? clamp(v / .5, 0, 1) : clamp((v - .5) / .5, 0, 1);
+      el.style.opacity = k.toFixed(3);
+      el.style.filter = k > .995 ? 'none' : 'blur(' + ((1 - k) * 6).toFixed(1) + 'px)';
+    });
+  }
+
+  var stages = [].slice.call(document.querySelectorAll('.st')).map(function (el) {
+    var st = { el: el, band: el.querySelector('.band'), push: el.querySelector('.push'), imgs: [], loaded: false, ready: {} };
+    if (el.classList.contains('seq')) {
+      st.kind = 'seq';
+      st.frames = el.dataset.frames.split(',');
+      st.key = +el.dataset.key;
+      st.textat = +el.dataset.textat;
+      st.textout = el.dataset.textout ? +el.dataset.textout : null;
+      st.capAt = el.dataset.cap ? +el.dataset.cap : null;
+      st.cap = el.querySelector('.cap');
+      st.layers = st.frames.map(function (f, i) {
+        var d;
+        if (f === 'black') { d = document.createElement('div'); d.className = 'layer black'; st.ready[i] = true; }
+        else {
+          d = document.createElement('div'); d.className = 'layer';
+          var p = pic(f, '', i === st.key ? el.dataset.alt : '');
+          d.appendChild(p);
+          var img = p.querySelector('img');
+          st.imgs.push({ img: img, idx: i });
+        }
+        d.style.zIndex = i + 1;
+        st.push.appendChild(d);
+        return d;
+      });
+      if (el.dataset.narrow) {
+        var n = el.dataset.narrow.split(',').map(Number);
+        st.narrow = { x: n[0], y: n[1], r: n[2], el: el.querySelector('.narrow'), ar: AR(st.frames[st.frames.length - 1]) };
+      }
+    } else {
+      st.kind = 'lamp';
+      st.name = el.dataset.img;
+      st.ar = AR(st.name);
+      st.path = el.dataset.path.split('|').map(function (k) {
+        var a = k.split(':'), v = a[1].split(',').map(Number);
+        return { p: +a[0], x: v[0], y: v[1], r: v[2], a: v[3] };
+      });
+      var lamp = document.createElement('div'); lamp.className = 'lamp';
+      var ghost = pic(st.name, 'ghost', '');
+      st.lit = pic(st.name, 'lit', el.dataset.alt);
+      st.warm = document.createElement('div'); st.warm.className = 'warm';
+      lamp.appendChild(ghost); lamp.appendChild(st.lit); lamp.appendChild(st.warm);
+      st.push.appendChild(lamp);
+      var vig = document.createElement('div'); vig.className = 'vig' + (el.dataset.vig ? ' ' + el.dataset.vig : '');
+      st.band.insertBefore(vig, st.band.querySelector('.grain'));
+      st.imgs.push({ img: ghost.querySelector('img'), idx: 0 }, { img: st.lit.querySelector('img'), idx: 1 });
+    }
+    return st;
+  });
+
+  function load(st) {
+    if (st.loaded) return;
+    st.loaded = true;
+    st.imgs.forEach(function (o) {
+      var src = o.img.previousSibling;
+      src.srcset = src.dataset.srcset;
+      o.img.srcset = o.img.dataset.srcset;
+      o.img.src = o.img.dataset.src;
+      var done = function () { st.ready[o.idx] = true; st.dirty = true; queue(); };
+      if (o.img.complete && o.img.naturalWidth) { (o.img.decode ? o.img.decode() : Promise.resolve()).then(done, done); }
+      else o.img.addEventListener('load', function () { (o.img.decode ? o.img.decode() : Promise.resolve()).then(done, done); }, { once: true });
+    });
+  }
+
+  // ---- series: crossfade frame to frame, with a short hold on each ----
+  function setSeq(st, p) {
+    var n = st.frames.length, a = .05, b = .82;
+    var raw = (n - 1) * clamp((p - a) / (b - a), 0, 1);
+    var i = Math.min(Math.floor(raw), n - 2), f = smooth(.18, .82, raw - i);
+    if (n === 1) { i = 0; f = 0; }
+    var pos = i + f;
+    for (var k = 0; k < n; k++) {
+      var o = 0;
+      if (k === i) o = 1;
+      else if (k === i + 1) o = f;
+      if (!st.ready[k]) o = 0;
+      var L = st.layers[k];
+      L.style.opacity = o.toFixed(3);
+      L.style.visibility = o > 0 ? 'visible' : 'hidden';
+    }
+    // every stage fades back to black at its end (except the closing one), so photos appear and disappear
+    var out = st.el.classList.contains('close') ? 1 : 1 - smooth(.88, .99, p);
+    st.push.style.opacity = out.toFixed(3);
+    var t = smooth(st.textat - .6, st.textat, pos) * out;
+    if (st.textout != null) t *= 1 - smooth(st.textout - .4, st.textout, pos);
+    setT(st, t.toFixed(3));
+    if (st.cap) st.cap.style.opacity = smooth(st.capAt - .3, st.capAt + .2, pos).toFixed(3);
+
+    if (st.narrow) {
+      var m = smooth(n - 1.6, n - 1, pos), N = st.narrow;
+      if (m > 0.001) {
+        var W = st.band.clientWidth, H = st.band.clientHeight, c = cover(W, H, N.ar);
+        var x = c.ox + N.x * c.dw, y = c.oy + N.y * c.dh, r = N.r * c.dh;
+        N.el.style.setProperty('--narrow', 'radial-gradient(ellipse ' + (r * 1.15).toFixed(0) + 'px ' + (r * 1.25).toFixed(0) + 'px at ' + x.toFixed(0) + 'px ' + y.toFixed(0) + 'px, transparent 0%, transparent 45%, rgba(0,0,0,.55) 75%, rgba(0,0,0,.9) 100%)');
+      }
+      N.el.style.opacity = (m * .9).toFixed(3);
+    }
+  }
+
+  // ---- single key frame: a soft pool of light moves over it ----
+  function interp(path, p) {
+    for (var k = 0; k < path.length - 1; k++) {
+      var A = path[k], B = path[k + 1];
+      if (p <= B.p) {
+        var s = ease(clamp((p - A.p) / (B.p - A.p), 0, 1));
+        return { x: A.x + (B.x - A.x) * s, y: A.y + (B.y - A.y) * s, r: A.r + (B.r - A.r) * s, a: A.a + (B.a - A.a) * s };
+      }
+    }
+    return path[path.length - 1];
+  }
+  function setLamp(st, p) {
+    var ok = st.ready[0] && st.ready[1];
+    var L = interp(st.path, p);
+    var W = st.band.clientWidth, H = st.band.clientHeight, c = cover(W, H, st.ar);
+    var x = c.ox + L.x * c.dw, y = c.oy + L.y * c.dh, rx = L.r * c.dh * 1.05, ry = L.r * c.dh * 1.3, a = ok ? L.a : 0;
+    var g = function (m) { return 'rgba(0,0,0,' + (a * m).toFixed(3) + ')'; };
+    var at = ' ' + rx.toFixed(0) + 'px ' + ry.toFixed(0) + 'px at ' + x.toFixed(0) + 'px ' + y.toFixed(0) + 'px, ';
+    st.el.style.setProperty('--mask', 'radial-gradient(ellipse' + at + g(1) + ' 0%, ' + g(.86) + ' 26%, ' + g(.5) + ' 52%, ' + g(.17) + ' 76%, ' + g(0) + ' 100%)');
+    st.warm.style.background = 'radial-gradient(ellipse' + at + 'rgba(255,168,84,' + ((st.name === 'pewter' ? .1 : st.name.indexOf('laid') === 0 ? .16 : .34) * a).toFixed(3) + ') 0%, rgba(255,150,70,' + ((st.name === 'pewter' ? .04 : st.name.indexOf('laid') === 0 ? .06 : .12) * a).toFixed(3) + ') 55%, transparent 100%)';
+    setT(st, (smooth(.56, .68, p) * (1 - smooth(.88, .97, p))).toFixed(3));
+    st.push.style.opacity = (smooth(0, .06, p) * (1 - smooth(.9, .99, p))).toFixed(3);
+  }
+
+  function progress(st, vh) {
+    var r = st.el.getBoundingClientRect();
+    var p = clamp((vh - r.top) / Math.max(1, r.height), 0, 1);
+    var last = st === stages[stages.length - 1];
+    return { p: p, on: (vh - r.top) > 0 && (p < 1 || last), near: r.top < vh * 2.6 && r.bottom > -vh };
+  }
+
+  var queued = false;
+  function frame() {
+    queued = false;
+    var vh = innerHeight;
+    if (intro) { var io = 1 - smooth(0, vh * .45, scrollY); intro.style.setProperty('--io', io.toFixed(3)); intro.style.setProperty('--iv', io > 0.001 ? 'visible' : 'hidden'); }
+    stages.forEach(function (st, idx) {
+      var q = progress(st, vh);
+      if (q.near) load(st);
+      if (q.on && stages[idx + 1]) load(stages[idx + 1]);
+      st.el.classList.toggle('active', q.on);
+      if (!q.on && !st.dirty) return;
+      st.dirty = false;
+      if (st.kind === 'seq') setSeq(st, q.p); else setLamp(st, q.p);
+    });
+  }
+  function queue() { if (!queued) { queued = true; requestAnimationFrame(reduce ? still : frame); } }
+
+  // reduced motion: everything loads lazily and rests on its lit key frame
+  function still() {
+    queued = false;
+    stages.forEach(function (st) {
+      if (st.kind === 'seq') {
+        st.layers.forEach(function (L, k) { var o = k === st.key ? 1 : 0; L.style.opacity = o; L.style.visibility = o ? 'visible' : 'hidden'; });
+        setT(st, 1);
+        if (st.narrow) st.narrow.el.style.opacity = 0;
+      } else {
+        if (!st.rest) { var l = st.path[4]; st.rest = [{ p: 0, x: l.x, y: l.y, r: l.r * 1.25, a: 1 }, { p: 1, x: l.x, y: l.y, r: l.r * 1.25, a: 1 }]; st.path = st.rest; }
+        setLamp(st, .7);
+        setT(st, 1);
+      }
+    });
+  }
+
+  if (reduce) {
+    stages.forEach(function (st) {
+      st.imgs.forEach(function (o) { o.img.loading = 'lazy'; });
+      load(st);
+    });
+    still();
+    addEventListener('resize', queue);
+    return;
+  }
+  addEventListener('scroll', queue, { passive: true });
+  addEventListener('resize', function () { stages.forEach(function (s) { s.dirty = true; }); queue(); });
+  load(stages[0]);
+  frame();
+})();
+</script>
+</body>
+</html>
